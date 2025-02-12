@@ -12,8 +12,6 @@ import java.util.HashMap;
 import com.sun.mail.imap.IMAPStore;
 import com.sun.mail.imap.IMAPFolder;
 import javax.mail.FetchProfile;
-import javax.mail.search.MessageIDTerm;
-import javax.mail.search.SearchTerm;
 import com.example.email.entity.Email;
 import com.example.email.repository.EmailRepository;
 
