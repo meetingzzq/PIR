@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.mail.*;
 import java.util.Arrays;
@@ -13,6 +14,8 @@ import com.sun.mail.imap.IMAPFolder;
 import javax.mail.FetchProfile;
 import javax.mail.search.MessageIDTerm;
 import javax.mail.search.SearchTerm;
+import com.example.email.entity.Email;
+import com.example.email.repository.EmailRepository;
 
 @Slf4j
 @Service
@@ -30,6 +33,9 @@ public class EmailService {
     private String protocol;
 
     private final Session emailSession;
+
+    @Autowired
+    private EmailRepository emailRepository;
 
     public EmailService(Session emailSession) {
         this.emailSession = emailSession;
@@ -57,9 +63,8 @@ public class EmailService {
             inbox = (IMAPFolder) store.getFolder("INBOX");
             inbox.open(Folder.READ_WRITE);
 
-            // 搜索所有邮件，包括已标记删除的
-            SearchTerm searchTerm = new MessageIDTerm("*");
-            Message[] messages = inbox.search(searchTerm);
+            // 直接获取所有邮件
+            Message[] messages = inbox.getMessages();
 
             // 设置获取属性
             FetchProfile profile = new FetchProfile();
@@ -93,13 +98,20 @@ public class EmailService {
                 log.info("发件人: {}", from);
                 log.info("发送时间: {}", sentDate);
 
+                // 保存到数据库
+                Email email = new Email();
+                email.setSubject(subject);
+                email.setSender(from);
+                emailRepository.save(email);
+
                 // 移动邮件到相应文件夹
                 if (from.toLowerCase().contains("jay")) {
                     errorFolder.appendMessages(new Message[] { message });
                 } else {
                     successFolder.appendMessages(new Message[] { message });
                 }
-
+                // 标记原邮件为删除
+                message.setFlag(Flags.Flag.DELETED, true);
             }
 
         } catch (Exception e) {
